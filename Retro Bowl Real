@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Retro Football Dodge</title>
+    <style>
+        body { text-align: center; background: #222; color: white; font-family: 'Courier New', Courier, monospace; }
+        canvas { background: #2d5a27; border: 4px solid #fff; display: block; margin: 20px auto; }
+        .controls { color: #aaa; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <h1>RETRO FOOTBALL</h1>
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+    <div class="controls">Use ARROW KEYS or WASD to dodge defenders!</div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let player = { x: 200, y: 450, size: 20, color: '#1e90ff' };
+        let defenders = [];
+        let score = 0;
+        let gameOver = false;
+
+        // Controls
+        let keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        function spawnDefender() {
+            if (Math.random() < 0.05) {
+                defenders.push({
+                    x: Math.random() * (canvas.width - 20),
+                    y: -20,
+                    size: 20,
+                    speed: 3 + (score / 5)
+                });
+            }
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            // Player Movement
+            if ((keys['ArrowLeft'] || keys['KeyA']) && player.x > 0) player.x -= 5;
+            if ((keys['ArrowRight'] || keys['KeyD']) && player.x < canvas.width - player.size) player.x += 5;
+            if ((keys['ArrowUp'] || keys['KeyW']) && player.y > 0) player.y -= 5;
+            if ((keys['ArrowDown'] || keys['KeyS']) && player.y < canvas.height - player.size) player.y += 5;
+
+            // Defender Logic
+            spawnDefender();
+            defenders.forEach((d, index) => {
+                d.y += d.speed;
+                
+                // Collision Detection
+                if (player.x < d.x + d.size && player.x + player.size > d.x &&
+                    player.y < d.y + d.size && player.y + player.size > d.y) {
+                    gameOver = true;
+                }
+
+                // Score points for passing defenders
+                if (d.y > canvas.height) {
+                    defenders.splice(index, 1);
+                    score++;
+                }
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Field Lines
+            ctx.strokeStyle = "rgba(255,255,255,0.3)";
+            for(let i=0; i<canvas.height; i+=50) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            // Draw Player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+
+            // Draw Defenders
+            ctx.fillStyle = "#ff4757";
+            defenders.forEach(d => ctx.fillRect(d.x, d.y, d.size, d.size));
+
+            // Score
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText("Yards Gained: " + score, 10, 30);
+
+            if (gameOver) {
+                ctx.fillStyle = "rgba(0,0,0,0.7)";
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.fillText("SACKED! Score: " + score, 110, 250);
+                ctx.fillText("Press F5 to Restart", 105, 280);
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>
+
